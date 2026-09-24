@@ -6,16 +6,6 @@ upstreams=(opm-common)
 declare -A upstreamRev
 upstreamRev[opm-common]=master
 
-if grep -q "opm-common=" <<< $ghprbCommentBody
-then
-    if test -n "$absolute_revisions"
-    then
-        upstreamRev[opm-common]=$(echo $ghprbCommentBody | sed -r 's/.*opm-common=([^ ]+).*/\1/g')
-    else
-        upstreamRev[opm-common]=pull/$(echo $ghprbCommentBody | sed -r 's/.*opm-common=([0-9]+).*/\1/g')/merge
-    fi
-fi
-
 # Downstreams and revisions
 declare -a downstreams
 downstreams=(opm-simulators
@@ -25,19 +15,8 @@ declare -A downstreamRev
 downstreamRev[opm-simulators]=master
 downstreamRev[opm-upscaling]=master
 
-# Clone opm-common
-if ! test -d $WORKSPACE/deps/opm-common
-then
-    mkdir -p $WORKSPACE/deps/opm-common
-    pushd $WORKSPACE/deps/opm-common
-    repo_root=${OPM_REPO_ROOT:-git@github.com:OPM}
-    git init .
-    git remote add origin ${repo_root}/opm-common
-    git fetch --depth 1 origin ${upstreamRev[opm-common]}:branch_to_build
-    test $? -eq 0 || exit 1
-    git checkout branch_to_build
-    popd
-fi
+# Fetch opm-common before loading its shared Jenkins helpers.
+source "$WORKSPACE/jenkins/checkout-opm-common.sh"
 
 source $WORKSPACE/deps/opm-common/jenkins/build-opm-module.sh
 
